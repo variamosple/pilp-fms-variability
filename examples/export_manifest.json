@@ -1,0 +1,20 @@
+{
+  "bundle_version": "1.0.0",
+  "artifacts": {
+    "variability_model.uvl": {
+      "role": "Hard boolean feature and attribute constraints",
+      "sha256": "205ac880f0620f4e72795b6d22d4d0ffc89a2c44b3f4fc99c2913fa4f2a37ae8"
+    },
+    "process_contract.json": {
+      "role": "Station routing and operation precedence contract",
+      "sha256": "e55c6c522c5353d52b94519ea4c3b2f40c67faac8e58c399e137add845e07dc3"
+    },
+    "learned_risk_model.pl": {
+      "role": "Event-indexed probabilistic LPAD rules learned from logs",
+      "sha256": "8d8d958b8c627fb3626678fdd7544e4b103db285097ab5ee11199db79da49b36",
+      "clause_count": 8
+    }
+  },
+  "semantic_separation_verified": true,
+  "hard_constraints_modified_by_learner": false
+}

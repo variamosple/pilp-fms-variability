@@ -1,0 +1,92 @@
+{
+  "schema_version": "1.0.0",
+  "family": "FurnitureFMS",
+  "stations": [
+    "s1",
+    "s2",
+    "s3",
+    "s4",
+    "s5"
+  ],
+  "routing_precedence": [
+    {
+      "product": "chair",
+      "material": "light_wood",
+      "geometry": "compact",
+      "finish_grade": "standard",
+      "ordered_routing": [
+        "cutting@s1",
+        "leg_drilling@s2",
+        "seat_assembly@s3",
+        "sanding@s4",
+        "varnishing@s5"
+      ]
+    },
+    {
+      "product": "stool",
+      "material": "light_wood",
+      "geometry": "compact",
+      "finish_grade": "standard",
+      "ordered_routing": [
+        "cutting@s1",
+        "leg_drilling@s2",
+        "seat_assembly@s3",
+        "varnishing@s5"
+      ]
+    },
+    {
+      "product": "table",
+      "material": "heavy_wood",
+      "geometry": "wide",
+      "finish_grade": "standard",
+      "ordered_routing": [
+        "cutting@s1",
+        "leg_drilling@s2",
+        "top_assembly@s3",
+        "sanding@s4",
+        "varnishing@s5"
+      ]
+    },
+    {
+      "product": "bench",
+      "material": "heavy_wood",
+      "geometry": "wide",
+      "finish_grade": "standard",
+      "ordered_routing": [
+        "cutting@s1",
+        "leg_drilling@s2",
+        "seat_assembly@s3",
+        "sanding@s4",
+        "varnishing@s5"
+      ]
+    },
+    {
+      "product": "armchair",
+      "material": "composite",
+      "geometry": "compact",
+      "finish_grade": "precision",
+      "ordered_routing": [
+        "cutting@s1",
+        "leg_drilling@s2",
+        "seat_assembly@s3",
+        "sanding@s4",
+        "varnishing@s5"
+      ]
+    },
+    {
+      "product": "desk",
+      "material": "heavy_wood",
+      "geometry": "wide",
+      "finish_grade": "precision",
+      "ordered_routing": [
+        "cutting@s1",
+        "leg_drilling@s2",
+        "top_assembly@s3",
+        "sanding@s4",
+        "varnishing@s5"
+      ]
+    }
+  ],
+  "hard_constraints_modified_by_learner": false,
+  "observation_mask_enforced": true
+}

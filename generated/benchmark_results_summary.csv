@@ -1,0 +1,16 @@
+hypothesis,target_scope,sample_size,method,seeds,brier_mean,brier_sd,brier_ci95_low,brier_ci95_high,kl_mean,clause_f1_mean,wilcoxon_p_vs_pilp
+H1,seen_family,100,BayesianNetwork_CPT,30,0.0004,0.000317,0.000287,0.000513,0.0072,0.0,1e-06
+H1,seen_family,100,BetaBinomial_Product,30,0.000828,0.000374,0.000694,0.000962,0.005791,0.0,1e-06
+H1,seen_family,100,PILP_SLIPCOVER_Structure,30,0.000294,0.000298,0.000187,0.000401,0.001791,1.0,1.0
+H1,seen_family,100,PILP_Unmasked_Ablation,30,0.00113,0.000665,0.000892,0.001368,0.005107,0.9933,0.0
+H1,seen_family,100,ProcessMining_ControlFlow,30,0.011895,0.000211,0.011819,0.01197,0.052868,0.0,1e-06
+H1,seen_family,100,Tabular_LogReg,30,0.004493,0.000432,0.004339,0.004648,0.023761,0.0,0.0
+H2,unseen_desk,100,BayesianNetwork_CPT,30,0.023715,0.001679,0.023114,0.024316,0.084637,0.0,0.0
+H2,unseen_desk,100,BetaBinomial_Product,30,0.023715,0.001679,0.023114,0.024316,0.084637,0.0,0.0
+H2,unseen_desk,100,PILP_SLIPCOVER_Structure,30,0.000798,0.000891,0.000479,0.001116,0.002663,1.0,1.0
+H2,unseen_desk,100,PILP_Unmasked_Ablation,30,0.002863,0.001604,0.002289,0.003437,0.010133,0.9933,0.0
+H2,unseen_desk,100,ProcessMining_ControlFlow,30,0.023843,0.001759,0.023213,0.024472,0.086003,0.0,0.0
+H2,unseen_desk,100,Tabular_LogReg,30,0.011173,0.001775,0.010538,0.011809,0.045674,0.0,0.0
+H3,unseen_desk,20,PILP_SLIPCOVER_Structure,30,0.006041,0.004779,0.00433,0.007751,0.017052,0.9345,1.0
+H3,unseen_desk,50,PILP_SLIPCOVER_Structure,30,0.001932,0.001354,0.001448,0.002417,0.005771,0.9952,1.0
+H3,unseen_desk,250,PILP_SLIPCOVER_Structure,30,0.00045,0.000315,0.000337,0.000563,0.00135,1.0,1.0
