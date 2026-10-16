@@ -1,0 +1,27 @@
+{
+  "benchmark_name": "FMS-PPR-PILP-Benchmark-v1",
+  "random_seeds": 30,
+  "base_seed": 1000,
+  "products": {
+    "train_family": ["chair", "table", "stool", "bench", "armchair"],
+    "held_out_transfer": ["desk"]
+  },
+  "stations": ["s1", "s2", "s3", "s4", "s5"],
+  "sample_sizes_per_product": [20, 50, 100, 250, 500],
+  "noise_levels": [0.0, 0.05, 0.10, 0.20],
+  "missingness_rates": [0.0, 0.05, 0.15, 0.30],
+  "slipcover_hyperparameters": {
+    "megaex_bottom": 20,
+    "max_iter": 10,
+    "max_iter_structure": 20,
+    "maxdepth_var": 4,
+    "beamsize": 15,
+    "pruning_threshold": 0.01
+  },
+  "statistical_tests": {
+    "paired_test": "wilcoxon_signed_rank",
+    "multiple_comparison_correction": "holm_bonferroni",
+    "confidence_level": 0.95,
+    "bootstrap_resamples": 2000
+  }
+}
