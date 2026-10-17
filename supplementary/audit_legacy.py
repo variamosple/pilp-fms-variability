@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-"""Reproducible analytical audit of the legacy three-station FMS logic program.
+"""Analytical reproduction script for Section 6.1-6.3 and Appendix A of the manuscript.
 
-Computes exact world probabilities, station-failure marginals, sequential product
-completion probabilities, and Beta-Binomial small-sample credible intervals
-reported in Section 2 and Appendix A of the manuscript.
+Reconstructs the unconditional process success probability (0.663827), enumerates
+all 8 station-failure worlds, computes sequential completion marginals, and evaluates
+the Beta(1,1) credible intervals for sparse counts (1/6 and 0/6), writing
+generated/audit_results.json and generated/audit_macros.tex.
 """
 
 import argparse
@@ -14,149 +15,101 @@ from scipy.stats import beta
 
 
 def compute_audit(params: dict) -> dict:
-    stations = params["stations"]
-    busy = params["station_busy"]
-    fault = params["station_fault"]
+    q = params["conditional_process_annotation_q"]
+    f = params["station_failure_facts"]
+    a = params["completion_annotations"]
+    stations = ["s1", "s2", "s3"]
 
-    # 1. Exact single-station noisy-OR failure marginal:
-    # P(failed(s)) = 1 - (1 - fault(s)) * (1 - busy(s) * 0.8)
-    station_fail = {}
-    station_avail = {}
-    for s in stations:
-        p_busy_fail = busy[s] * 0.80
-        p_fail = 1.0 - (1.0 - fault[s]) * (1.0 - p_busy_fail)
-        station_fail[s] = round(p_fail, 9)
-        station_avail[s] = round(1.0 - p_fail, 9)
-
-    # 2. Enumerate all 2^3 = 8 binary station-failure worlds
+    # 1. Enumerate all 2^3 = 8 station-failure worlds
     worlds = []
-    for bits in itertools.product([0, 1], repeat=len(stations)):
+    for bits in itertools.product([0, 1], repeat=3):
         prob = 1.0
-        state_map = {}
-        for s, b in zip(stations, bits):
-            state_map[s] = bool(b)
-            prob *= station_fail[s] if b == 1 else station_avail[s]
+        for st, b in zip(stations, bits):
+            prob *= f[st] if b == 1 else (1.0 - f[st])
         worlds.append({
-            "failed_s1": int(state_map["s1"]),
-            "failed_s2": int(state_map["s2"]),
-            "failed_s3": int(state_map["s3"]),
+            "F1": bits[0],
+            "F2": bits[1],
+            "F3": bits[2],
             "probability": round(prob, 9),
-            "all_operational": int(sum(bits) == 0),
         })
 
-    # Legacy successful_process: requires NO station failed across the cell
-    p_legacy_success = round(
-        station_avail["s1"] * station_avail["s2"] * station_avail["s3"], 9
-    )
+    p_no_failure = (1.0 - f["s1"]) * (1.0 - f["s2"]) * (1.0 - f["s3"])
+    p_success = q * p_no_failure
 
-    # 3. Reconciled sequential completion probability per product
-    op_assign = params["operation_assignment"]
-    prod_ops = params["product_operations"]
-    prod_succ = params["product_operation_success"]
+    # 2. Sequential completion marginals P(C_j) = prod_{i=1}^j a_i * (1 - f_i)
+    c1 = a["s1"] * (1.0 - f["s1"])
+    c2 = c1 * a["s2"] * (1.0 - f["s2"])
+    c3 = c2 * a["s3"] * (1.0 - f["s3"])
 
-    step_success = {}
-    sequential_completion = {}
-    legacy_disjunction_upper_bound = {}
+    # 3. Beta(1,1) sparse failure count intervals for n=6
+    sp = params["sparse_counts_beta"]
+    n = sp["exposures"]
+    a0, b0 = sp["prior_alpha"], sp["prior_beta"]
 
-    for prod, ops in prod_ops.items():
-        step_success[prod] = {}
-        seq_p = 1.0
-        fail_all_branches = 1.0
-        for op in ops:
-            st = op_assign[op]
-            p_step = prod_succ[prod][op] * station_avail[st]
-            step_success[prod][f"{op}@{st}"] = round(p_step, 9)
-            seq_p *= p_step
-            fail_all_branches *= (1.0 - p_step)
-        sequential_completion[prod] = round(seq_p, 9)
-        legacy_disjunction_upper_bound[prod] = round(1.0 - fail_all_branches, 9)
+    k1 = sp["observed_failures"]["s1_s2"]
+    one_low, one_high = beta.ppf([0.025, 0.975], a0 + k1, b0 + n - k1)
 
-    # 4. Beta-Binomial posterior sensitivity under Beta(1,1) prior
-    bb_cfg = params["beta_binomial_sensitivity"]
-    alpha0 = bb_cfg["prior_alpha"]
-    beta0 = bb_cfg["prior_beta"]
-    sensitivity_rows = []
-
-    for label, p_true in bb_cfg["target_rates"].items():
-        for n in bb_cfg["sample_sizes"]:
-            k = round(p_true * n)
-            a_post = alpha0 + k
-            b_post = beta0 + (n - k)
-            post_mean = a_post / (a_post + b_post)
-            ci_low, ci_high = beta.ppf([0.025, 0.975], a_post, b_post)
-            sensitivity_rows.append({
-                "parameter": label,
-                "true_rate": p_true,
-                "n": n,
-                "k_observed": k,
-                "posterior_mean": round(float(post_mean), 6),
-                "ci95_low": round(float(ci_low), 6),
-                "ci95_high": round(float(ci_high), 6),
-                "ci95_width": round(float(ci_high - ci_low), 6),
-            })
+    k0 = sp["observed_failures"]["s3"]
+    zero_low, zero_high = beta.ppf([0.025, 0.975], a0 + k0, b0 + n - k0)
 
     return {
-        "manuscript_claims": params["manuscript_claims"],
-        "station_failure_marginals": station_fail,
-        "station_availability_marginals": station_avail,
-        "world_table": worlds,
-        "legacy_successful_process": p_legacy_success,
-        "legacy_claim_discrepancy": round(
-            p_legacy_success - params["manuscript_claims"]["successful_process"], 9
-        ),
-        "reconciled_step_success": step_success,
-        "reconciled_sequential_completion": sequential_completion,
-        "legacy_or_encoding_completion": legacy_disjunction_upper_bound,
-        "beta_binomial_sensitivity": sensitivity_rows,
+        "q_annotation": q,
+        "station_failures": f,
+        "world_enumeration": worlds,
+        "world_probability_sum": round(sum(w["probability"] for w in worlds), 9),
+        "prob_no_station_failure": round(p_no_failure, 6),
+        "prob_unconditional_success": round(p_success, 6),
+        "sequential_completion_marginals": {
+            "C1": round(c1, 6),
+            "C2": round(c2, 6),
+            "C3": round(c3, 6),
+        },
+        "beta_credible_intervals_95": {
+            "1_of_6": {
+                "posterior_mean": round((a0 + k1) / (a0 + b0 + n), 4),
+                "ci95_low": round(float(one_low), 4),
+                "ci95_high": round(float(one_high), 4),
+            },
+            "0_of_6": {
+                "posterior_mean": round((a0 + k0) / (a0 + b0 + n), 4),
+                "ci95_low": round(float(zero_low), 4),
+                "ci95_high": round(float(zero_high), 4),
+            },
+        },
     }
 
 
-def write_latex_macros(audit: dict, out_path: Path) -> None:
-    s_fail = audit["station_failure_marginals"]
-    s_avail = audit["station_availability_marginals"]
-    seq = audit["reconciled_sequential_completion"]
-    step_chair = audit["reconciled_step_success"]["chair"]
+def write_macros(audit: dict, out_path: Path) -> None:
+    c = audit["sequential_completion_marginals"]
+    b1 = audit["beta_credible_intervals_95"]["1_of_6"]
+    b0 = audit["beta_credible_intervals_95"]["0_of_6"]
 
     lines = [
-        "% Auto-generated by supplementary/audit_legacy.py -- DO NOT EDIT MANUALLY",
-        f"\\newcommand{{\\ClaimLegacySuccess}}{{{audit['manuscript_claims']['successful_process']:.2f}}}",
-        f"\\newcommand{{\\AuditFailSOne}}{{{s_fail['s1']:.3f}}}",
-        f"\\newcommand{{\\AuditFailSTwo}}{{{s_fail['s2']:.4f}}}",
-        f"\\newcommand{{\\AuditFailSThree}}{{{s_fail['s3']:.4f}}}",
-        f"\\newcommand{{\\AuditAvailSOne}}{{{s_avail['s1']:.3f}}}",
-        f"\\newcommand{{\\AuditAvailSTwo}}{{{s_avail['s2']:.4f}}}",
-        f"\\newcommand{{\\AuditAvailSThree}}{{{s_avail['s3']:.4f}}}",
-        f"\\newcommand{{\\AuditLegacySuccess}}{{{audit['legacy_successful_process']:.6f}}}",
-        f"\\newcommand{{\\AuditLegacySuccessFull}}{{{audit['legacy_successful_process']:.9f}}}",
-        f"\\newcommand{{\\AuditChairSOneStep}}{{{step_chair['cutting@s1']:.4f}}}",
-        f"\\newcommand{{\\AuditChairSTwoStep}}{{{step_chair['drilling@s2']:.6f}}}",
-        f"\\newcommand{{\\AuditChairSThreeStep}}{{{step_chair['assembly_op@s3']:.6f}}}",
-        f"\\newcommand{{\\AuditChairSeq}}{{{seq['chair']:.6f}}}",
-        f"\\newcommand{{\\AuditTableSeq}}{{{seq['table']:.6f}}}",
-        f"\\newcommand{{\\AuditDeskSeq}}{{{seq['desk']:.6f}}}",
+        "% Auto-generated by supplementary/audit_legacy.py",
+        f"\\providecommand{{\\AuditNoFailure}}{{{audit['prob_no_station_failure']:.6f}}}",
+        f"\\providecommand{{\\AuditSuccess}}{{{audit['prob_unconditional_success']:.6f}}}",
+        f"\\providecommand{{\\AuditCompleteOne}}{{{c['C1']:.6f}}}",
+        f"\\providecommand{{\\AuditCompleteTwo}}{{{c['C2']:.6f}}}",
+        f"\\providecommand{{\\AuditCompleteThree}}{{{c['C3']:.6f}}}",
+        f"\\providecommand{{\\AuditOneLow}}{{{b1['ci95_low']:.4f}}}",
+        f"\\providecommand{{\\AuditOneHigh}}{{{b1['ci95_high']:.4f}}}",
+        f"\\providecommand{{\\AuditZeroLow}}{{{b0['ci95_low']:.4f}}}",
+        f"\\providecommand{{\\AuditZeroHigh}}{{{b0['ci95_high']:.4f}}}",
     ]
     out_path.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run analytical audit of legacy FMS LPAD.")
-    parser.add_argument("--root", type=str, default=".", help="Repository root directory.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--root", type=str, default=".")
     args = parser.parse_args()
-
     root = Path(args.root).resolve()
-    params_path = root / "supplementary" / "source_parameters.json"
+    params = json.loads((root / "supplementary" / "source_parameters.json").read_text(encoding="utf-8"))
+    audit = compute_audit(params)
     gen_dir = root / "generated"
     gen_dir.mkdir(parents=True, exist_ok=True)
-
-    params = json.loads(params_path.read_text(encoding="utf-8"))
-    audit = compute_audit(params)
-
-    json_out = gen_dir / "audit_results.json"
-    tex_out = gen_dir / "audit_macros.tex"
-
-    json_out.write_text(json.dumps(audit, indent=2), encoding="utf-8")
-    write_latex_macros(audit, tex_out)
-    print(f"[OK] Wrote {json_out} and {tex_out}")
+    (gen_dir / "audit_results.json").write_text(json.dumps(audit, indent=2) + "\n", encoding="utf-8")
+    write_macros(audit, gen_dir / "audit_macros.tex")
 
 
 if __name__ == "__main__":

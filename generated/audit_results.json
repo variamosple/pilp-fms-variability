@@ -1,68 +1,38 @@
 {
-  "manuscript_claims": {
-    "successful_process": 0.65,
-    "chair_s1": 0.9,
-    "chair_s2": 0.95
+  "q_annotation": 0.933443,
+  "station_failures": {
+    "s1": 0.150283,
+    "s2": 0.163062,
+    "s3": 1.0585e-06
   },
-  "station_failure_marginals": {
-    "s1": 0.202,
-    "s2": 0.1076,
-    "s3": 0.1376
-  },
-  "station_availability_marginals": {
-    "s1": 0.798,
-    "s2": 0.8924,
-    "s3": 0.8624
-  },
-  "world_table": [
-    {"failed_s1": 0, "failed_s2": 0, "failed_s3": 0, "probability": 0.614146306, "all_operational": 1},
-    {"failed_s1": 0, "failed_s2": 0, "failed_s3": 1, "probability": 0.097990412, "all_operational": 0},
-    {"failed_s1": 0, "failed_s2": 1, "failed_s3": 0, "probability": 0.074046328, "all_operational": 0},
-    {"failed_s1": 0, "failed_s2": 1, "failed_s3": 1, "probability": 0.011816954, "all_operational": 0},
-    {"failed_s1": 1, "failed_s2": 0, "failed_s3": 0, "probability": 0.155460869, "all_operational": 0},
-    {"failed_s1": 1, "failed_s2": 0, "failed_s3": 1, "probability": 0.024804657, "all_operational": 0},
-    {"failed_s1": 1, "failed_s2": 1, "failed_s3": 0, "probability": 0.018743597, "all_operational": 0},
-    {"failed_s1": 1, "failed_s2": 1, "failed_s3": 1, "probability": 0.002991277, "all_operational": 0}
+  "world_enumeration": [
+    {"F1": 0, "F2": 0, "F3": 0, "probability": 0.711159694},
+    {"F1": 0, "F2": 0, "F3": 1, "probability": 7.53e-07},
+    {"F1": 0, "F2": 1, "F3": 0, "probability": 0.138556384},
+    {"F1": 0, "F2": 1, "F3": 1, "probability": 1.47e-07},
+    {"F1": 1, "F2": 0, "F3": 0, "probability": 0.125782442},
+    {"F1": 1, "F2": 0, "F3": 1, "probability": 1.33e-07},
+    {"F1": 1, "F2": 1, "F3": 0, "probability": 0.024500547},
+    {"F1": 1, "F2": 1, "F3": 1, "probability": 2.6e-08}
   ],
-  "legacy_successful_process": 0.614146306,
-  "legacy_claim_discrepancy": -0.035853694,
-  "reconciled_step_success": {
-    "chair": {
-      "cutting@s1": 0.7182,
-      "drilling@s2": 0.84778,
-      "assembly_op@s3": 0.73304
+  "world_probability_sum": 1.0,
+  "prob_no_station_failure": 0.71116,
+  "prob_unconditional_success": 0.663827,
+  "sequential_completion_marginals": {
+    "C1": 0.822364,
+    "C2": 0.672053,
+    "C3": 0.561717
+  },
+  "beta_credible_intervals_95": {
+    "1_of_6": {
+      "posterior_mean": 0.25,
+      "ci95_low": 0.0319,
+      "ci95_high": 0.5787
     },
-    "table": {
-      "cutting@s1": 0.6783,
-      "drilling@s2": 0.71392,
-      "assembly_op@s3": 0.77616
-    },
-    "desk": {
-      "cutting@s1": 0.6384,
-      "drilling@s2": 0.80316,
-      "assembly_op@s3": 0.6468
+    "0_of_6": {
+      "posterior_mean": 0.125,
+      "ci95_low": 0.0036,
+      "ci95_high": 0.4096
     }
-  },
-  "reconciled_sequential_completion": {
-    "chair": 0.446331317,
-    "table": 0.375858559,
-    "desk": 0.331637005
-  },
-  "legacy_or_encoding_completion": {
-    "chair": 0.988547849,
-    "table": 0.979420091,
-    "desk": 0.974865359
-  },
-  "beta_binomial_sensitivity": [
-    {"parameter": "chair_cutting_s1", "true_rate": 0.9, "n": 10, "k_observed": 9, "posterior_mean": 0.833333, "ci95_low": 0.577414, "ci95_high": 0.979143, "ci95_width": 0.401729},
-    {"parameter": "chair_cutting_s1", "true_rate": 0.9, "n": 20, "k_observed": 18, "posterior_mean": 0.863636, "ci95_low": 0.683786, "ci95_high": 0.968597, "ci95_width": 0.284811},
-    {"parameter": "chair_cutting_s1", "true_rate": 0.9, "n": 50, "k_observed": 45, "posterior_mean": 0.884615, "ci95_low": 0.782461, "ci95_high": 0.955476, "ci95_width": 0.173015},
-    {"parameter": "chair_cutting_s1", "true_rate": 0.9, "n": 100, "k_observed": 90, "posterior_mean": 0.892157, "ci95_low": 0.823539, "ci95_high": 0.943823, "ci95_width": 0.120284},
-    {"parameter": "chair_cutting_s1", "true_rate": 0.9, "n": 250, "k_observed": 225, "posterior_mean": 0.896825, "ci95_low": 0.855972, "ci95_high": 0.931068, "ci95_width": 0.075096},
-    {"parameter": "chair_drilling_s2", "true_rate": 0.95, "n": 10, "k_observed": 10, "posterior_mean": 0.916667, "ci95_low": 0.691503, "ci95_high": 0.997689, "ci95_width": 0.306186},
-    {"parameter": "chair_drilling_s2", "true_rate": 0.95, "n": 20, "k_observed": 19, "posterior_mean": 0.909091, "ci95_low": 0.748962, "ci95_high": 0.988369, "ci95_width": 0.239407},
-    {"parameter": "chair_drilling_s2", "true_rate": 0.95, "n": 50, "k_observed": 48, "posterior_mean": 0.942308, "ci95_low": 0.861763, "ci95_high": 0.987725, "ci95_width": 0.125962},
-    {"parameter": "chair_drilling_s2", "true_rate": 0.95, "n": 100, "k_observed": 95, "posterior_mean": 0.941176, "ci95_low": 0.887195, "ci95_high": 0.977613, "ci95_width": 0.090418},
-    {"parameter": "chair_drilling_s2", "true_rate": 0.95, "n": 250, "k_observed": 238, "posterior_mean": 0.948413, "ci95_low": 0.917561, "ci95_high": 0.971923, "ci95_width": 0.054362}
-  ]
+  }
 }

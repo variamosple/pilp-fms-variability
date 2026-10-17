@@ -1,55 +1,22 @@
 {
-  "manuscript_claims": {
-    "successful_process": 0.65,
-    "chair_s1": 0.90,
-    "chair_s2": 0.95
+  "conditional_process_annotation_q": 0.933443,
+  "station_failure_facts": {
+    "s1": 0.150283,
+    "s2": 0.163062,
+    "s3": 0.0000010585
   },
-  "stations": ["s1", "s2", "s3"],
-  "station_busy": {
-    "s1": 0.20,
-    "s2": 0.10,
-    "s3": 0.15
+  "completion_annotations": {
+    "s1": 0.967809,
+    "s2": 0.976625,
+    "s3": 0.984620
   },
-  "station_fault": {
-    "s1": 0.05,
-    "s2": 0.03,
-    "s3": 0.02
-  },
-  "operation_assignment": {
-    "cutting": "s1",
-    "drilling": "s2",
-    "assembly_op": "s3"
-  },
-  "product_operations": {
-    "chair": ["cutting", "drilling", "assembly_op"],
-    "table": ["cutting", "drilling", "assembly_op"],
-    "desk": ["cutting", "drilling", "assembly_op"]
-  },
-  "product_operation_success": {
-    "chair": {
-      "cutting": 0.90,
-      "drilling": 0.95,
-      "assembly_op": 0.85
-    },
-    "table": {
-      "cutting": 0.85,
-      "drilling": 0.80,
-      "assembly_op": 0.90
-    },
-    "desk": {
-      "cutting": 0.80,
-      "drilling": 0.90,
-      "assembly_op": 0.75
-    }
-  },
-  "beta_binomial_sensitivity": {
+  "sparse_counts_beta": {
     "prior_alpha": 1.0,
     "prior_beta": 1.0,
-    "credible_level": 0.95,
-    "sample_sizes": [10, 20, 50, 100, 250],
-    "target_rates": {
-      "chair_cutting_s1": 0.90,
-      "chair_drilling_s2": 0.95
+    "exposures": 6,
+    "observed_failures": {
+      "s1_s2": 1,
+      "s3": 0
     }
   }
 }
