@@ -1,1 +1,1 @@
-experiment_id,hypothesis,seed,method,sample_size,noise_level,missingness_rate,target_scope,brier_score,nll,kl_divergence,clause_precision,clause_recall,clause_f1,constraint_violation_rate,runtime_sec
+experiment_id,hypothesis,seed,method,sample_size,noise_level,missingness_rate,target_scope,brier_score,nll,kl_divergence,prob_mse,clause_precision,clause_recall,clause_f1,top1_maint_agreement,maint_regret,constraint_violation_rate,runtime_sec

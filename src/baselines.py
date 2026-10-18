@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Statistical, tabular ML, Bayesian network, and process-mining baselines.
+"""Statistical, Bayesian network, tabular ML, process-mining, and LPAD ablation baselines.
 
-Implements the comparative baselines specified in Section 4.1 of the manuscript:
-1. ProductSpecificBetaBinomial: Smoothed Beta(1,1) estimator per (product, station).
-2. AttributeBayesianNetwork: Conditional probability table with Dirichlet smoothing.
-3. TabularLogRegBaseline: One-hot encoded L2-regularized logistic regression.
-4. ProcessMiningBaseline: Station-transition frequency model (control-flow discovery).
+Implements all comparative baselines specified in Table 2 (Section 5.4) of the manuscript:
+1. ProductSpecificBetaBinomial: Smoothed Beta(1,1) estimator per (product, operation, station).
+2. ParameterOnlyLPADBaseline: SWI-Prolog SLIPCOVER induce_par/2 on engineer-specified structure.
+3. OracleStructureLPADBaseline: SWI-Prolog SLIPCOVER induce_par/2 on true generating structure.
+4. AttributeBayesianNetwork: Joint conditional probability table with Dirichlet smoothing.
+5. TabularLogRegBaseline: L2-regularized logistic regression over one-hot features.
+6. ProcessMiningBaseline: Control-flow station transition failure frequency estimator.
+7. NaiveUnmaskedPILPBaseline: SWI-Prolog SLIPCOVER ablation treating attempted=0 as failed=0.
 """
 
 from collections import defaultdict
@@ -13,14 +16,15 @@ import math
 from typing import Dict, List
 
 from src.simulator import ProductSpec
+from src.slipcover_pipeline import (
+    LearnedClause,
+    predict_step_failure_prob,
+    run_slipcover_learning,
+)
 
 
 class ProductSpecificBetaBinomial:
-    """Smoothed Beta(1,1) tabular estimator conditioned on (product, operation, station).
-
-    Cannot generalize across products via shared relational attributes on unseen
-    product variants (H2), falling back to station-level marginals.
-    """
+    """Smoothed Beta(1,1) estimator conditioned on (product, operation, station) with pooled fallback."""
 
     def __init__(self, alpha: float = 1.0, beta: float = 1.0) -> None:
         self.alpha = alpha
@@ -42,17 +46,38 @@ class ProductSpecificBetaBinomial:
         if key in self.prod_station_counts and self.prod_station_counts[key][1] > 0:
             k, n = self.prod_station_counts[key]
             return round((k + self.alpha) / (n + self.alpha + self.beta), 6)
-        # Unseen product fallback: station-level marginal
         k_st, n_st = self.station_counts.get(station, [0, 0])
         return round((k_st + self.alpha) / (n_st + self.alpha + self.beta), 6)
 
 
-class AttributeBayesianNetwork:
-    """Full joint attribute CPT estimator P(failed | op, station, material, geometry, finish).
+class ParameterOnlyLPADBaseline:
+    """Engineer-structured LPAD fitted via native SWI-Prolog SLIPCOVER induce_par/2 (no clause search)."""
 
-    Suffers from combinatorial cell fragmentation in small-sample regimes (H3)
-    because it does not perform selective clause structure induction.
-    """
+    def __init__(self) -> None:
+        self.clauses: List[LearnedClause] = []
+
+    def fit(self, records: List[Dict]) -> None:
+        self.clauses, _ = run_slipcover_learning(records, mode="parameter_only")
+
+    def predict_step_failure_prob(self, spec: ProductSpec, operation: str, station: str) -> float:
+        return predict_step_failure_prob(self.clauses, spec, operation, station)
+
+
+class OracleStructureLPADBaseline:
+    """Privileged oracle-structure LPAD fitted via native SWI-Prolog SLIPCOVER induce_par/2."""
+
+    def __init__(self) -> None:
+        self.clauses: List[LearnedClause] = []
+
+    def fit(self, records: List[Dict]) -> None:
+        self.clauses, _ = run_slipcover_learning(records, mode="oracle_structure")
+
+    def predict_step_failure_prob(self, spec: ProductSpec, operation: str, station: str) -> float:
+        return predict_step_failure_prob(self.clauses, spec, operation, station)
+
+
+class AttributeBayesianNetwork:
+    """Full joint attribute CPT estimator P(failed | op, station, material, geometry, finish)."""
 
     def __init__(self, equivalent_sample_size: float = 2.0) -> None:
         self.ess = equivalent_sample_size
@@ -86,7 +111,7 @@ class AttributeBayesianNetwork:
 
 
 class TabularLogRegBaseline:
-    """L2-regularized logistic regression over one-hot encoded product/station features."""
+    """L2-regularized logistic regression over one-hot encoded product and station attributes."""
 
     def __init__(self, l2_reg: float = 1.5, lr: float = 0.15, epochs: int = 120) -> None:
         self.l2_reg = l2_reg
@@ -148,11 +173,7 @@ class TabularLogRegBaseline:
 
 
 class ProcessMiningBaseline:
-    """Control-flow process discovery baseline estimating station/operation transition risk.
-
-    Captures routing precedence and station-level failure frequencies without
-    conditioning on relational product attributes.
-    """
+    """Control-flow process discovery baseline estimating station/operation transition risk."""
 
     def __init__(self) -> None:
         self.op_station_counts: Dict[tuple, List[int]] = defaultdict(lambda: [0, 0])
@@ -170,25 +191,21 @@ class ProcessMiningBaseline:
 
 
 class NaiveUnmaskedPILPBaseline:
-    """Ablation baseline (H5) treating unattempted steps (attempted=0) as negative failures."""
+    """Observation-mask ablation baseline (H3/H5) running SWI-Prolog SLIPCOVER on unmasked logs."""
 
     def __init__(self) -> None:
-        self.clauses = []
+        self.clauses: List[LearnedClause] = []
 
     def fit(self, records: List[Dict]) -> None:
-        from src.slipcover_pipeline import _empirical_pilp_inducer
-
         corrupted = []
         for r in records:
             r_copy = dict(r)
-            if r_copy["attempted"] == 0:
+            if r_copy["attempted"] == 0 and r_copy["operation"] != "none":
                 r_copy["attempted"] = 1
                 r_copy["censored"] = 0
-                r_copy["failed"] = 0  # Conflates unattempted step with successful execution
+                r_copy["failed"] = 0  # Conflates unattempted downstream step with non-failure
             corrupted.append(r_copy)
-        self.clauses = _empirical_pilp_inducer(corrupted, mode="structure_learning")
+        self.clauses, _ = run_slipcover_learning(corrupted, mode="structure_learning")
 
     def predict_step_failure_prob(self, spec: ProductSpec, operation: str, station: str) -> float:
-        from src.slipcover_pipeline import predict_step_failure_prob
-
         return predict_step_failure_prob(self.clauses, spec, operation, station)
