@@ -76,26 +76,18 @@ def run_slipcover_learning(
     records: List[Dict],
     mode: str = "structure_learning",
     pruning_threshold: float = 0.01,
-    megaex_bottom: int = 15,
-    max_iter: int = 10,
-    max_iter_structure: int = 15,
-    maxdepth_var: int = 3,
+    megaex_bottom: int = 8,
+    max_iter: int = 6,
+    max_iter_structure: int = 8,
+    maxdepth_var: int = 2,
 ) -> Tuple[List[LearnedClause], float]:
-    """Executes native SWI-Prolog SLIPCOVER learning (induce/2 or induce_par/2).
-
-    Modes supported:
-    - 'structure_learning': Full clause search + EM parameter estimation (induce/2) with empty initial theory.
-    - 'parameter_only': Fixed engineer-supplied operational structure (without hidden product-attribute links)
-      fitted via EM over BDDs (induce_par/2).
-    - 'oracle_structure': Privileged true generating structure fitted via EM over BDDs (induce_par/2).
-    """
+    """Executes native SWI-Prolog SLIPCOVER learning (induce/2 or induce_par/2)."""
     t0 = time.perf_counter()
 
     initial_clauses = None
     induce_pred = "induce([train], P)"
 
     if mode == "parameter_only":
-        # Engineer-designed fixed structure: knows operations and stations, but not withheld attribute interactions
         induce_pred = "induce_par([train], P)"
         initial_clauses = [
             "failed(A):0.10 :- assigned(cutting, A)",
@@ -106,7 +98,6 @@ def run_slipcover_learning(
             "failed(A):0.10 :- assigned(varnishing, A)",
         ]
     elif mode == "oracle_structure":
-        # Privileged oracle structure: knows exact withheld relational bodies, fits parameters via EM
         induce_pred = "induce_par([train], P)"
         initial_clauses = [
             "failed(A):0.30 :- assigned(cutting, A), material(heavy_wood)",
@@ -144,7 +135,7 @@ def run_slipcover_learning(
             ["swipl", "-q", "-g", goal],
             capture_output=True,
             text=True,
-            timeout=180,
+            timeout=120,
             check=False,
         )
         if res.returncode != 0 and "=== SLIPCOVER_LEARNED_PROGRAM ===" not in res.stdout:
@@ -173,7 +164,6 @@ def query_pita_step_probabilities(
         else:
             lpad_rules.append(f"failed(P, St):{prob:.6f} :- assigned(P, {c.operation}, St).")
 
-    # Baseline station noise fallback when no learned clause fires for a station
     for st, b_noise in BASE_STATION_NOISE.items():
         lpad_rules.append(f"failed(P, {st}):{b_noise:.6f} :- assigned(P, _, {st}).")
 
@@ -222,7 +212,6 @@ def query_pita_step_probabilities(
             _, p_name, op_name, st_name, val_str = line.strip().split("|")
             prob_map[(p_name, op_name, st_name)] = round(float(val_str), 6)
 
-    # Ensure every routed step has a valid entry
     for p_name, op_name, st_name in queries:
         if (p_name, op_name, st_name) not in prob_map:
             spec = PRODUCT_CATALOG[p_name]
