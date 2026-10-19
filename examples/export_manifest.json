@@ -1,18 +1,34 @@
 {
-  "bundle_version": "1.0.0",
+  "bundle_version": "1.1.0",
   "artifacts": {
     "variability_model.uvl": {
       "role": "Hard boolean feature and attribute constraints",
-      "sha256": "205ac880f0620f4e72795b6d22d4d0ffc89a2c44b3f4fc99c2913fa4f2a37ae8"
+      "sha256": "03ef1cae6fffe17249e2163e6b42824d6861fc05ae20764ae5ba5a4fa9ba405f"
     },
     "process_contract.json": {
       "role": "Station routing and operation precedence contract",
-      "sha256": "e55c6c522c5353d52b94519ea4c3b2f40c67faac8e58c399e137add845e07dc3"
+      "sha256": "4f00d2f32be627909736c3e9d20808dccf5eea41ba5d8d162e3c3f7095d2e5aa"
     },
     "learned_risk_model.pl": {
-      "role": "Event-indexed probabilistic LPAD rules learned from logs",
-      "sha256": "8d8d958b8c627fb3626678fdd7544e4b103db285097ab5ee11199db79da49b36",
-      "clause_count": 8
+      "role": "Event-indexed probabilistic LPAD rules learned via SWI-Prolog SLIPCOVER",
+      "sha256": "4b2006f983ac497ee29e026e70758868c7a958d9323456abb6e0fe7cd37cba11",
+      "clause_count": 3
+    }
+  },
+  "validation_report": {
+    "uvl_parser_accepted": true,
+    "uvl_parser_message": "UVL syntax and identifier references valid",
+    "declared_feature_count": 24,
+    "equation_7_satisfiability_equivalence": {
+      "verified": true,
+      "exported_valid_configurations_count": 6,
+      "approved_X_H_configurations_count": 6,
+      "set_symmetric_difference_size": 0
+    },
+    "negative_tests_section_5_7": {
+      "contradictory_requirement_rejected": true,
+      "missing_identifier_rejected": true,
+      "probability_threshold_promotion_violation_detected": true
     }
   },
   "semantic_separation_verified": true,

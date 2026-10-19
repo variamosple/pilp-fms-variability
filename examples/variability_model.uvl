@@ -35,9 +35,9 @@ features
 
 constraints
     Chair => LightWood & Compact & StandardFinish & SeatAssembly & Sanding
-    Stool => LightWood & Compact & StandardFinish & SeatAssembly & !Sanding
-    Table => HeavyWood & Wide & StandardFinish & TopAssembly & Sanding
-    Bench => HeavyWood & Wide & StandardFinish & SeatAssembly & Sanding
+    Stool => Composite & Compact & StandardFinish & SeatAssembly & !Sanding
+    Table => HeavyWood & Compact & StandardFinish & TopAssembly & Sanding
+    Bench => LightWood & Wide & StandardFinish & SeatAssembly & Sanding
     Armchair => Composite & Compact & PrecisionFinish & SeatAssembly & Sanding
     Desk => HeavyWood & Wide & PrecisionFinish & TopAssembly & Sanding
     SeatAssembly => !TopAssembly

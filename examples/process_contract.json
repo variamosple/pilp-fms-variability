@@ -24,7 +24,7 @@
     },
     {
       "product": "stool",
-      "material": "light_wood",
+      "material": "composite",
       "geometry": "compact",
       "finish_grade": "standard",
       "ordered_routing": [
@@ -37,7 +37,7 @@
     {
       "product": "table",
       "material": "heavy_wood",
-      "geometry": "wide",
+      "geometry": "compact",
       "finish_grade": "standard",
       "ordered_routing": [
         "cutting@s1",
@@ -49,7 +49,7 @@
     },
     {
       "product": "bench",
-      "material": "heavy_wood",
+      "material": "light_wood",
       "geometry": "wide",
       "finish_grade": "standard",
       "ordered_routing": [
