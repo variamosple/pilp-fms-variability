@@ -66,7 +66,7 @@ def _parse_slipcover_output(stdout_text: str, pruning_threshold: float = 0.01) -
         learned.append(
             LearnedClause(
                 station_var=st_from_head,
-                probability=round(min(prob, 0.50), 4),
+                probability=round(prob, 4),
                 operation=operation,
                 condition_attr=cond_attr,
                 condition_val=cond_val,

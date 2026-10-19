@@ -37,7 +37,7 @@ PRODUCT_CATALOG: Dict[str, ProductSpec] = {
     ),
     "stool": ProductSpec(
         name="stool",
-        material="light_wood",
+        material="composite",
         geometry="compact",
         finish_grade="standard",
         routing=[
@@ -50,7 +50,7 @@ PRODUCT_CATALOG: Dict[str, ProductSpec] = {
     "table": ProductSpec(
         name="table",
         material="heavy_wood",
-        geometry="wide",
+        geometry="compact",
         finish_grade="standard",
         routing=[
             ("cutting", "s1"),
@@ -62,7 +62,7 @@ PRODUCT_CATALOG: Dict[str, ProductSpec] = {
     ),
     "bench": ProductSpec(
         name="bench",
-        material="heavy_wood",
+        material="light_wood",
         geometry="wide",
         finish_grade="standard",
         routing=[
