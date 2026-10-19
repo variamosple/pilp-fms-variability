@@ -19,7 +19,6 @@ from typing import Dict, List, Set, Tuple
 from src.simulator import PRODUCT_CATALOG, true_product_completion_prob
 from src.slipcover_pipeline import LearnedClause
 
-
 def generate_uvl_model() -> str:
     return """namespace FurnitureFMS
 
@@ -58,14 +57,13 @@ features
 
 constraints
     Chair => LightWood & Compact & StandardFinish & SeatAssembly & Sanding
-    Stool => LightWood & Compact & StandardFinish & SeatAssembly & !Sanding
-    Table => HeavyWood & Wide & StandardFinish & TopAssembly & Sanding
-    Bench => HeavyWood & Wide & StandardFinish & SeatAssembly & Sanding
+    Stool => Composite & Compact & StandardFinish & SeatAssembly & !Sanding
+    Table => HeavyWood & Compact & StandardFinish & TopAssembly & Sanding
+    Bench => LightWood & Wide & StandardFinish & SeatAssembly & Sanding
     Armchair => Composite & Compact & PrecisionFinish & SeatAssembly & Sanding
     Desk => HeavyWood & Wide & PrecisionFinish & TopAssembly & Sanding
     SeatAssembly => !TopAssembly
 """
-
 
 def generate_process_contract() -> dict:
     precedences = []
