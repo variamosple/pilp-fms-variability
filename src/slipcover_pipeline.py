@@ -39,16 +39,21 @@ def _parse_slipcover_output(stdout_text: str, pruning_threshold: float = 0.01) -
     learned: List[LearnedClause] = []
 
     for raw in raw_entries:
-        m_prob = re.search(r"failed\(([^)]+)\)\s*:\s*([0-9.eE+-]+)", raw)
-        if not m_prob:
+        m_head = re.search(r"failed\((?:([a-zA-Z0-9_]+)\s*,\s*)?([a-zA-Z0-9_]+)\)\s*:\s*([0-9.eE+-]+)", raw)
+        if not m_head:
             continue
-        st_var = m_prob.group(1).strip()
-        prob = float(m_prob.group(2))
+
+        op_from_head = m_head.group(1)
+        st_from_head = m_head.group(2)
+        prob = float(m_head.group(3))
+
         if prob < pruning_threshold:
             continue
 
-        op_match = re.search(r"assigned\(([a-zA-Z0-9_]+)\s*,", raw)
-        operation = op_match.group(1) if op_match else None
+        operation = op_from_head
+        if not operation:
+            op_match = re.search(r"assigned\(([a-zA-Z0-9_]+)", raw)
+            operation = op_match.group(1) if op_match else None
 
         cond_attr, cond_val = None, None
         for attr in ("material", "geometry", "finish_grade"):
@@ -60,8 +65,8 @@ def _parse_slipcover_output(stdout_text: str, pruning_threshold: float = 0.01) -
 
         learned.append(
             LearnedClause(
-                station_var=st_var,
-                probability=round(prob, 6),
+                station_var=st_from_head,
+                probability=round(min(prob, 0.50), 4),
                 operation=operation,
                 condition_attr=cond_attr,
                 condition_val=cond_val,
@@ -76,9 +81,9 @@ def run_slipcover_learning(
     records: List[Dict],
     mode: str = "structure_learning",
     pruning_threshold: float = 0.01,
-    megaex_bottom: int = 8,
+    megaex_bottom: int = 10,
     max_iter: int = 6,
-    max_iter_structure: int = 8,
+    max_iter_structure: int = 20,
     maxdepth_var: int = 2,
 ) -> Tuple[List[LearnedClause], float]:
     """Executes native SWI-Prolog SLIPCOVER learning (induce/2 or induce_par/2)."""
@@ -90,31 +95,33 @@ def run_slipcover_learning(
     if mode == "parameter_only":
         induce_pred = "induce_par([train], P)"
         initial_clauses = [
-            "failed(A):0.10 :- assigned(cutting, A)",
-            "failed(A):0.10 :- assigned(leg_drilling, A)",
-            "failed(A):0.05 :- assigned(seat_assembly, A)",
-            "failed(A):0.05 :- assigned(top_assembly, A)",
-            "failed(A):0.05 :- assigned(sanding, A)",
-            "failed(A):0.10 :- assigned(varnishing, A)",
+            "failed(cutting, s1):0.10",
+            "failed(leg_drilling, s2):0.10",
+            "failed(seat_assembly, s3):0.05",
+            "failed(top_assembly, s3):0.05",
+            "failed(sanding, s4):0.05",
+            "failed(varnishing, s5):0.10",
         ]
     elif mode == "oracle_structure":
         induce_pred = "induce_par([train], P)"
         initial_clauses = [
-            "failed(A):0.30 :- assigned(cutting, A), material(heavy_wood)",
-            "failed(A):0.20 :- assigned(leg_drilling, A), geometry(wide)",
-            "failed(A):0.25 :- assigned(varnishing, A), finish_grade(precision)",
-            "failed(A):0.03 :- assigned(cutting, A)",
-            "failed(A):0.02 :- assigned(leg_drilling, A)",
-            "failed(A):0.02 :- assigned(seat_assembly, A)",
-            "failed(A):0.02 :- assigned(top_assembly, A)",
-            "failed(A):0.02 :- assigned(sanding, A)",
-            "failed(A):0.03 :- assigned(varnishing, A)",
+            "failed(cutting, s1):0.35 :- material(heavy_wood)",
+            "failed(leg_drilling, s2):0.25 :- geometry(wide)",
+            "failed(varnishing, s5):0.30 :- finish_grade(precision)",
         ]
+
+    valid_events = [
+        ev for ev in records
+        if ev.get("attempted") == 1 and ev.get("censored", 0) == 0 and ev.get("failed") is not None
+    ]
+    fails = [ev for ev in valid_events if ev["failed"] == 1]
+    succs = [ev for ev in valid_events if ev["failed"] == 0][:max(len(fails) * 2, 60)]
+    train_records = fails + succs
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pl_path = Path(tmpdir) / "train_job.pl"
         write_slipcover_file(
-            records,
+            train_records,
             pl_path,
             initial_theory_clauses=initial_clauses,
             megaex_bottom=megaex_bottom,
@@ -155,17 +162,17 @@ def query_pita_step_probabilities(
     lpad_rules = []
     for c in clauses:
         prob = max(0.0, min(1.0, c.probability))
-        if not c.operation:
-            continue
+        st = c.station_var
+        op = c.operation or "_"
         if c.condition_attr and c.condition_val:
             lpad_rules.append(
-                f"failed(P, St):{prob:.6f} :- assigned(P, {c.operation}, St), {c.condition_attr}(P, {c.condition_val})."
+                f"failed(P, {op}, {st}):{prob:.6f} :- {c.condition_attr}(P, {c.condition_val})."
             )
         else:
-            lpad_rules.append(f"failed(P, St):{prob:.6f} :- assigned(P, {c.operation}, St).")
+            lpad_rules.append(f"failed(P, {op}, {st}):{prob:.6f}.")
 
     for st, b_noise in BASE_STATION_NOISE.items():
-        lpad_rules.append(f"failed(P, {st}):{b_noise:.6f} :- assigned(P, _, {st}).")
+        lpad_rules.append(f"failed(P, _, {st}):{b_noise:.6f}.")
 
     facts = []
     queries = []
@@ -190,7 +197,7 @@ def query_pita_step_probabilities(
     )
 
     query_goals = [
-        f"(prob(failed({p}, {st}), Prob_{p}_{st}), format('PITA_RES|{p}|{op}|{st}|~8f~n', [Prob_{p}_{st}]))"
+        f"(prob(failed({p}, {op}, {st}), Prob_{p}_{op}_{st}), format('PITA_RES|{p}|{op}|{st}|~8f~n', [Prob_{p}_{op}_{st}]))"
         for (p, op, st) in queries
     ]
 
@@ -228,9 +235,9 @@ def predict_step_failure_prob(
     """Evaluates exact LPAD noisy-OR failure probability matching PITA independent disjunctions."""
     p_survival = 1.0 - BASE_STATION_NOISE.get(station, 0.02)
     for c in clauses:
-        if c.operation == operation:
+        if (c.operation == operation or c.operation is None) and (c.station_var == station or c.station_var == "_"):
             if c.condition_attr is None:
                 p_survival *= (1.0 - c.probability)
-            elif getattr(spec, c.condition_attr) == c.condition_val:
+            elif getattr(spec, c.condition_attr, None) == c.condition_val:
                 p_survival *= (1.0 - c.probability)
     return round(1.0 - p_survival, 6)
